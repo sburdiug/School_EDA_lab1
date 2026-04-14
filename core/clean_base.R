@@ -23,7 +23,13 @@ rename_map_df4 <- c(
   "SenateCAGeo" = "CA Senate District",
   "AssemblyCAGeo" = "CA Assembly District",
   "CountyCodeGeo" = "County Code Geo",
-  "CountyNameGeo" = "County Name Geo"
+  "CountyNameGeo" = "County Name Geo",
+  "DistrictElemCodeGeo" = "District Elem Code Geo",
+  "DistrictElemNameGeo" = "District Elem Name Geo",
+  "DistrictHighCodeGeo" = "District High Code Geo",
+  "DistrictHighNameGeo" = "District High Name Geo",
+  "DistrictUnifiedCodeGeo" = "District Unified Code Geo",
+  "DistrictUnifiedNameGeo" = "District Unified Name Geo"
 )
 
 for (old_name in names(rename_map_df4)) {
@@ -57,7 +63,8 @@ normalize_locale <- function(df) {
       ),
       locale_type = factor(locale_type),
       locale_size = factor(locale_size)
-    )
+    ) %>%
+    select(-Locale)
 }
 
 df1 <- normalize_locale(df1)
@@ -72,6 +79,8 @@ df4 <- df4 %>%
   select(-matches("^Grade (TK|KG|[0-9]+)$"))
 
 
+df3 <- df3 %>%
+  select(-ORIG_FID)
 
 
 
