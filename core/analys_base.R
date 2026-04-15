@@ -63,17 +63,17 @@ united_types <- data.frame(
   stringsAsFactors = FALSE
 )
 
-if (file.exists("data/clean/SchoolSites_all_EDB.rds")) {
-  edb_df <- readRDS("data/clean/SchoolSites_all_EDB.rds")
-} else if (exists("edb_df")) {
-  edb_df <- edb_df
+if (file.exists("data/clean/SchoolSites_all_EDA.rds")) {
+  eda_df <- readRDS("data/clean/SchoolSites_all_EDA.rds")
+} else if (exists("eda_df")) {
+  eda_df <- eda_df
 } else {
-  edb_df <- readr::read_csv("data/clean/SchoolSites_all_EDB.csv", show_col_types = FALSE)
+  eda_df <- readr::read_csv("data/clean/SchoolSites_all_EDA.csv", show_col_types = FALSE)
 }
 
-edb_types <- data.frame(
-  column_name = names(edb_df),
-  edb_df_type = vapply(edb_df, function(col) class(col)[1], character(1)),
+eda_types <- data.frame(
+  column_name = names(eda_df),
+  eda_df_type = vapply(eda_df, function(col) class(col)[1], character(1)),
   stringsAsFactors = FALSE
 )
 
@@ -82,23 +82,23 @@ df4_vs_united_types <- full_join(
   united_types,
   by = "column_name"
 ) %>%
-  full_join(edb_types, by = "column_name") %>%
+  full_join(eda_types, by = "column_name") %>%
   mutate(
     in_df4 = !is.na(df4_type),
     in_united_df = !is.na(united_df_type),
-    in_edb_df = !is.na(edb_df_type),
+    in_eda_df = !is.na(eda_df_type),
     same_type_df4_united = ifelse(in_df4 & in_united_df, df4_type == united_df_type, NA),
-    same_type_united_edb = ifelse(in_united_df & in_edb_df, united_df_type == edb_df_type, NA),
-    same_type_df4_edb = ifelse(in_df4 & in_edb_df, df4_type == edb_df_type, NA)
+    same_type_united_eda = ifelse(in_united_df & in_eda_df, united_df_type == eda_df_type, NA),
+    same_type_df4_eda = ifelse(in_df4 & in_eda_df, df4_type == eda_df_type, NA)
   ) %>%
   arrange(desc(in_df4 & in_united_df), column_name) %>%
   select(
     column_name,
-    df4_type, united_df_type, edb_df_type,
-    in_df4, in_united_df, in_edb_df,
-    same_type_df4_united, same_type_united_edb, same_type_df4_edb
+    df4_type, united_df_type, eda_df_type,
+    in_df4, in_united_df, in_eda_df,
+    same_type_df4_united, same_type_united_eda, same_type_df4_eda
   )
 
 print(df4_vs_united_types, row.names = FALSE)
 write_csv(df4_vs_united_types, "data/df4_vs_united_df_types.csv")
-write_csv(df4_vs_united_types, "data/df4_vs_united_vs_edb_types.csv")
+write_csv(df4_vs_united_types, "data/df4_vs_united_vs_eda_types.csv")

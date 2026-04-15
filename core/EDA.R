@@ -1,12 +1,17 @@
 library(readr)
 library(dplyr)
 
-# Формуємо/оновлюємо очищені CSV і united_df
-source("core/clean_base.R")
+# Працюємо з уже очищеним датафреймом:
+# 1) спочатку пробуємо CSV, 2) якщо його немає — RDS
+clean_csv_path <- "data/clean/SchoolSites_all_clean.csv"
+clean_rds_path <- "data/clean/SchoolSites_all_clean.rds"
 
-# Якщо united_df недоступний в оточенні, читаємо зі збереженого clean-файла
-if (!exists("united_df")) {
-  united_df <- readr::read_csv("data/clean/SchoolSites_all_clean.csv", show_col_types = FALSE)
+if (file.exists(clean_csv_path)) {
+  united_df <- readr::read_csv(clean_csv_path, show_col_types = FALSE)
+} else if (file.exists(clean_rds_path)) {
+  united_df <- readRDS(clean_rds_path)
+} else {
+  stop("Не знайдено очищені дані: очікується data/clean/SchoolSites_all_clean.csv або data/clean/SchoolSites_all_clean.rds")
 }
 
 parse_school_date <- function(x) {
@@ -29,7 +34,7 @@ status_levels <- status_levels[!is.na(status_levels)]
 assistance_status_essa_levels <- sort(unique(as.character(united_df[["Assistance Status ESSA"]])))
 assistance_status_essa_levels <- assistance_status_essa_levels[!is.na(assistance_status_essa_levels)]
 
-edb_df <- united_df |>
+eda_df <- united_df |>
   mutate(
     `Academic Year` = factor(
       `Academic Year`,
@@ -73,5 +78,5 @@ edb_df <- united_df |>
     `Open Date` = parse_school_date(`Open Date`)
   )
 
-write_csv(edb_df, "data/clean/SchoolSites_all_EDB.csv")
-saveRDS(edb_df, "data/clean/SchoolSites_all_EDB.rds")
+write_csv(eda_df, "data/clean/SchoolSites_all_EDA.csv")
+saveRDS(eda_df, "data/clean/SchoolSites_all_EDA.rds")

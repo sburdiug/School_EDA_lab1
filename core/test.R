@@ -8,11 +8,11 @@ if (!exists("united_df")) {
   stop("Об'єкт united_df не знайдено після source('core/EDA.R').")
 }
 
-if (!exists("edb_df")) {
-  stop("Об'єкт edb_df не знайдено після source('core/EDA.R').")
+if (!exists("eda_df")) {
+  stop("Об'єкт eda_df не знайдено після source('core/EDA.R').")
 }
 
-df <- edb_df
+df <- eda_df
 
 pick_col <- function(data, candidates) {
   nm <- names(data)
