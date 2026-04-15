@@ -197,4 +197,4 @@ united_df <- united_df |>
 
 
 
-write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
+write_csv(united_df, file.path(output_dir, "clean_data.csv"))
