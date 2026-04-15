@@ -51,7 +51,6 @@ Rscript core/test.R
 - `data/clean/SchoolSites_all_clean.csv`
 - `data/clean/SchoolSites_all_EDA.csv`
 - `data/clean/SchoolSites_all_EDA.rds`
-- `data/clean/grade_order_issues.csv` (результат перевірки `Grade High < Grade Low`)
 
 ## Що перевіряє `core/test.R`
 
