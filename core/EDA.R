@@ -1,10 +1,10 @@
 library(readr)
 library(dplyr)
 
-# Формируем/обновляем очищенные CSV и united_df
+# Формуємо/оновлюємо очищені CSV і united_df
 source("core/clean_base.R")
 
-# Если united_df недоступен в окружении, читаем из сохраненного clean-файла
+# Якщо united_df недоступний в оточенні, читаємо зі збереженого clean-файла
 if (!exists("united_df")) {
   united_df <- readr::read_csv("data/clean/SchoolSites_all_clean.csv", show_col_types = FALSE)
 }

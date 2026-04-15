@@ -41,7 +41,7 @@ comparison <- comparison[order(comparison$datasets_with_column, comparison$colum
 comparison_print <- comparison[c("column_name", "pattern", "datasets_with_column", "present_in_all_4")]
 print(comparison_print, row.names = FALSE)
 
-# Таблица типов данных по колонкам df4 (y24_25)
+# Таблиця типів даних за колонками df4 (y24_25)
 df4_data <- readr::read_csv(dataset_files[["y24_25"]], show_col_types = FALSE)
 df4_types <- data.frame(
   column_name = names(df4_data),
@@ -52,7 +52,7 @@ df4_types <- data.frame(
 print(df4_types, row.names = FALSE)
 write_csv(df4_types, "data/df4_column_types.csv")
 
-# Сравнение типов данных между df4 и united_df
+# Порівняння типів даних між df4 і united_df
 if (!exists("united_df")) {
   united_df <- readr::read_csv("data/clean/SchoolSites_all_clean.csv", show_col_types = FALSE)
 }

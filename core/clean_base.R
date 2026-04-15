@@ -1,18 +1,18 @@
 library(readr)
 library(dplyr)
 
-# Тихое чтение CSV без parsing warnings в консоли
+# Тихе читання CSV без parsing warnings у консолі
 read_csv_quiet <- function(path) {
   suppressWarnings(read_csv(path, show_col_types = FALSE))
 }
 
-# Читаем 4 исходных таблицы
+# Читаємо 4 вихідні таблиці
 df1 <- read_csv_quiet("data/SchoolSites21-22.csv")
 df2 <- read_csv_quiet("data/SchoolSites22-23.csv")
 df3 <- read_csv_quiet("data/SchoolSites23-24.csv")
 df4 <- read_csv_quiet("data/SchoolSites24-25.csv")
 
-# Для первой таблицы приводим имя колонки к общему формату
+# Для першої таблиці приводимо назву колонки до спільного формату
 if ("Year" %in% names(df1)) {
   names(df1)[names(df1) == "Year"] <- "Academic Year"
 }
@@ -82,7 +82,7 @@ df3 <- df3 %>%
 
 
 
-# Сохраняем очищенные таблицы отдельно, не перезаписывая исходные файлы
+# Зберігаємо очищені таблиці окремо, не перезаписуючи вихідні файли
 output_dir <- "data/clean"
 dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -126,7 +126,7 @@ united_df <- united_df %>%
   select(-any_of(c("x", "y"))) %>%
   select(-matches("Geo$", ignore.case = TRUE))
 
-# В таблице приводим Y/N-колонки к логическому типу TRUE/FALSE, пустые ячейки -> NA
+# У таблиці приводимо Y/N-колонки до логічного типу TRUE/FALSE, порожні комірки -> NA
 normalize_yn_columns <- function(df, target_columns) {
   for (target_col in target_columns) {
     matched_col <- names(df)[tolower(names(df)) == tolower(target_col)]
@@ -145,7 +145,7 @@ normalize_yn_columns <- function(df, target_columns) {
   df
 }
 
-# Добавляйте сюда любые нужные колонки с Y/N
+# Додавайте сюди будь-які потрібні колонки з Y/N
 yn_to_bool_columns <- c("Magnet", "Title I", "DASS", "Charter" )
 united_df <- normalize_yn_columns(united_df, yn_to_bool_columns)
 
