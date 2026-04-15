@@ -62,7 +62,7 @@ normalize_locale <- function(df) {
     make_size_labels(c("3", "4"), c("1" = "Fringe", "2" = "Distant", "3" = "Remote"))
   )
 
-  df %>%
+  df |>
     mutate(
       # Витягуємо лише цифри з поля Locale (прибираємо літери та пробіли)
       .code = gsub("[^0-9]", "", as.character(Locale)),
@@ -76,7 +76,7 @@ normalize_locale <- function(df) {
         size_labels[substr(.code, 1, 2)],
         levels = c("Large", "Midsize", "Small", "Fringe", "Distant", "Remote")
       )
-    ) %>%
+    ) |>
     # Видаляємо вихідне поле та службову змінну
     select(-Locale, -.code)
 }
@@ -120,5 +120,51 @@ united_df <- bind_rows(
 )
 
 united_df <- united_df %>% select(-any_of("OBJECTID"))
+
+# В таблице приводим Y/N-колонки к логическому типу TRUE/FALSE, пустые ячейки -> NA
+normalize_yn_columns <- function(df, target_columns) {
+  for (target_col in target_columns) {
+    matched_col <- names(df)[tolower(names(df)) == tolower(target_col)]
+    if (length(matched_col) != 1) {
+      next
+    }
+    current_vals <- trimws(as.character(df[[matched_col]]))
+    df[[matched_col]] <- case_when(
+      is.na(current_vals) ~ NA,
+      current_vals == "Y" ~ TRUE,
+      current_vals == "N" ~ FALSE,
+      TRUE ~ NA
+    )
+  }
+
+  df
+}
+
+# Добавляйте сюда любые нужные колонки с Y/N
+yn_to_bool_columns <- c("Magnet", "Title I", "DASS", "Charter" )
+united_df <- normalize_yn_columns(united_df, yn_to_bool_columns)
+
+
+united_df <- united_df |>
+  mutate(
+    virtual_status = case_when(
+      Virtual == "N" ~ "Not virtual",
+      Virtual == "C" ~ "Primarily classroom",
+      Virtual == "V" ~ "Primarily virtual",
+      Virtual == "F" ~ "Fully virtual",
+      TRUE ~ NA_character_
+    ),
+    virtual_status = factor(
+      virtual_status,
+      levels = c(
+        "Not virtual",
+        "Primarily classroom",
+        "Primarily virtual",
+        "Fully virtual"
+      )
+    )
+  ) |>
+  select(-Virtual)
+
 
 write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
