@@ -1,3 +1,7 @@
 /.idea
-/data
+
 .claude/settings.local.json
+/data/plots
+data/df4_column_types.csv
+data/df4_vs_united_df_types.csv
+data/df4_vs_united_vs_edb_types.csv
