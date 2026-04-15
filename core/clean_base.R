@@ -164,4 +164,38 @@ united_df <- united_df |>
 
 united_df <- united_df |> select(-`Charter Num`)
 
+percent_out_of_range_summary <- united_df |>
+  select(ends_with("(%)")) |>
+  summarise(across(everything(), ~sum(. < 0 | . > 100, na.rm = TRUE)))
+
+united_df <- united_df |>
+  mutate(
+    grade_low_num = case_when(
+      `Grade Low` == "PK" ~ -2,
+      `Grade Low` == "KG" ~ -1,
+      `Grade Low` %in% sprintf("%02d", 1:12) ~ as.numeric(`Grade Low`),
+      TRUE ~ NA_real_
+    ),
+    grade_high_num = case_when(
+      `Grade High` == "PK" ~ -2,
+      `Grade High` == "KG" ~ -1,
+      `Grade High` %in% c("OK", "0K") ~ 0,
+      `Grade High` %in% sprintf("%02d", 1:12) ~ as.numeric(`Grade High`),
+      TRUE ~ NA_real_
+    )
+  )
+
+grade_order_issues <- united_df |>
+  filter(grade_high_num < grade_low_num) |>
+  select(`School Level`, `Grade Low`, `Grade High`, grade_low_num, grade_high_num)
+
+message("Кількість записів з Grade High < Grade Low: ", nrow(grade_order_issues))
+if (nrow(grade_order_issues) > 0) {
+  print(grade_order_issues, n = nrow(grade_order_issues))
+}
+
+write_csv(grade_order_issues, file.path(output_dir, "grade_order_issues.csv"))
+
+
+
 write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
