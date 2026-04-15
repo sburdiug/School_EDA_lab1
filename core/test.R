@@ -1,15 +1,22 @@
 library(dplyr)
 
+eda_rds_path <- "data/clean/clean_data.rds"
 
-
-source("core/EDA.R")
+if (file.exists(eda_rds_path)) {
+  eda_df <- readRDS(eda_rds_path)
+  if (!exists("united_df")) {
+    united_df <- eda_df
+  }
+} else {
+  source("core/EDA.R")
+}
 
 if (!exists("united_df")) {
-  stop("Об'єкт united_df не знайдено після source('core/EDA.R').")
+  stop("Об'єкт united_df не знайдено (ні з RDS, ні після source('core/EDA.R')).")
 }
 
 if (!exists("eda_df")) {
-  stop("Об'єкт eda_df не знайдено після source('core/EDA.R').")
+  stop("Об'єкт eda_df не знайдено (ні з RDS, ні після source('core/EDA.R')).")
 }
 
 df <- eda_df

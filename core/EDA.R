@@ -78,5 +78,5 @@ eda_df <- united_df |>
     `Open Date` = parse_school_date(`Open Date`)
   )
 
-write_csv(eda_df, "data/clean/SchoolSites_all_EDA.csv")
-saveRDS(eda_df, "data/clean/SchoolSites_all_EDA.rds")
+write_csv(eda_df, "data/clean/clean_data.csv")
+saveRDS(eda_df, "data/clean/clean_data.rds")

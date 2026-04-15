@@ -54,7 +54,7 @@ write_csv(df4_types, "data/df4_column_types.csv")
 
 # Порівняння типів даних між df4 і united_df
 if (!exists("united_df")) {
-  united_df <- readr::read_csv("data/clean/SchoolSites_all_clean.csv", show_col_types = FALSE)
+  united_df <- readr::read_csv("data/clean/clean_data.csv", show_col_types = FALSE)
 }
 
 united_types <- data.frame(
@@ -63,12 +63,12 @@ united_types <- data.frame(
   stringsAsFactors = FALSE
 )
 
-if (file.exists("data/clean/SchoolSites_all_EDA.rds")) {
-  eda_df <- readRDS("data/clean/SchoolSites_all_EDA.rds")
+if (file.exists("data/clean/clean_data.rds")) {
+  eda_df <- readRDS("data/clean/clean_data.rds")
 } else if (exists("eda_df")) {
   eda_df <- eda_df
 } else {
-  eda_df <- readr::read_csv("data/clean/SchoolSites_all_EDA.csv", show_col_types = FALSE)
+  eda_df <- readr::read_csv("data/clean/clean_data.csv", show_col_types = FALSE)
 }
 
 eda_types <- data.frame(
@@ -99,6 +99,4 @@ df4_vs_united_types <- full_join(
     same_type_df4_united, same_type_united_eda, same_type_df4_eda
   )
 
-print(df4_vs_united_types, row.names = FALSE)
-write_csv(df4_vs_united_types, "data/df4_vs_united_df_types.csv")
-write_csv(df4_vs_united_types, "data/df4_vs_united_vs_eda_types.csv")
+
