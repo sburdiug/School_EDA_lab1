@@ -17,19 +17,10 @@ if ("Year" %in% names(df1)) {
   names(df1)[names(df1) == "Year"] <- "Academic Year"
 }
 
-# Для четвертой таблицы приводим гео-колонки к формату первых трех таблиц
 rename_map_df4 <- c(
   "CongUSGeo" = "US Congress District",
   "SenateCAGeo" = "CA Senate District",
-  "AssemblyCAGeo" = "CA Assembly District",
-  "CountyCodeGeo" = "County Code Geo",
-  "CountyNameGeo" = "County Name Geo",
-  "DistrictElemCodeGeo" = "District Elem Code Geo",
-  "DistrictElemNameGeo" = "District Elem Name Geo",
-  "DistrictHighCodeGeo" = "District High Code Geo",
-  "DistrictHighNameGeo" = "District High Name Geo",
-  "DistrictUnifiedCodeGeo" = "District Unified Code Geo",
-  "DistrictUnifiedNameGeo" = "District Unified Name Geo"
+  "AssemblyCAGeo" = "CA Assembly District"
 )
 
 for (old_name in names(rename_map_df4)) {
@@ -37,7 +28,6 @@ for (old_name in names(rename_map_df4)) {
     names(df4)[names(df4) == old_name] <- rename_map_df4[[old_name]]
   }
 }
-
 # Нормалізує поле Locale: розкодовує двозначний числовий код у два стовпці
 # locale_type (тип населеного пункту) та locale_size (розмір)
 # Структура коду: перша цифра — тип (1=City, 2=Suburban, 3=Town, 4=Rural) друга цифра — розмір у межах типу
@@ -132,6 +122,10 @@ united_df <- bind_rows(yearly_dfs)
 
 united_df <- united_df %>% select(-any_of("OBJECTID"))
 
+united_df <- united_df %>%
+  select(-any_of(c("x", "y"))) %>%
+  select(-matches("Geo$", ignore.case = TRUE))
+
 # В таблице приводим Y/N-колонки к логическому типу TRUE/FALSE, пустые ячейки -> NA
 normalize_yn_columns <- function(df, target_columns) {
   for (target_col in target_columns) {
@@ -168,5 +162,6 @@ united_df <- united_df |>
   ) |>
   select(-any_of("Closed Date"))
 
+united_df <- united_df |> select(-`Charter Num`)
 
 write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
