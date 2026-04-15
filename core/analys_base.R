@@ -1,8 +1,8 @@
 library(readr)
 library(dplyr)
 
-# Спочатку формуємо/оновлюємо очищені CSV
-source("core/clean_base.R")
+# Спочатку формуємо/оновлюємо очищені CSV + EDB-версію
+source("core/EDB.R")
 
 # В аналізі беремо саме очищені файли з data/clean
 dataset_files <- c(
@@ -41,49 +41,64 @@ comparison <- comparison[order(comparison$datasets_with_column, comparison$colum
 comparison_print <- comparison[c("column_name", "pattern", "datasets_with_column", "present_in_all_4")]
 print(comparison_print, row.names = FALSE)
 
-# Порівняння однієї школи між роками за кодом School Code
-target_school_code <- "0130401"
-target_digits <- gsub("[^0-9]", "", target_school_code)
-target_digits_no_leading_zero <- sub("^0+", "", target_digits)
-
-find_school_by_code <- function(df, code_digits, code_digits_no_zero) {
-  school_code_digits <- gsub("[^0-9]", "", as.character(df[["School Code"]]))
-  cds_code_digits <- gsub("[^0-9]", "", as.character(df[["CDS Code"]]))
-
-  school_match <- school_code_digits == code_digits | school_code_digits == code_digits_no_zero
-  cds_match <- grepl(paste0(code_digits, "$"), cds_code_digits)
-
-  df[school_match | cds_match, , drop = FALSE]
-}
-
-school_rows <- list(
-  "2021-22" = find_school_by_code(df1, target_digits, target_digits_no_leading_zero),
-  "2022-23" = find_school_by_code(df2, target_digits, target_digits_no_leading_zero),
-  "2023-24" = find_school_by_code(df3, target_digits, target_digits_no_leading_zero),
-  "2024-25" = find_school_by_code(df4, target_digits, target_digits_no_leading_zero)
+# Таблица типов данных по колонкам df4 (y24_25)
+df4_data <- readr::read_csv(dataset_files[["y24_25"]], show_col_types = FALSE)
+df4_types <- data.frame(
+  column_name = names(df4_data),
+  data_type = vapply(df4_data, function(col) class(col)[1], character(1)),
+  stringsAsFactors = FALSE
 )
 
-all_school_columns <- sort(unique(unlist(lapply(list(df1, df2, df3, df4), names), use.names = FALSE)))
+print(df4_types, row.names = FALSE)
+write_csv(df4_types, "data/df4_column_types.csv")
 
-school_comparison <- bind_rows(lapply(names(school_rows), function(year_label) {
-  year_df <- school_rows[[year_label]]
+# Сравнение типов данных между df4 и united_df
+if (!exists("united_df")) {
+  united_df <- readr::read_csv("data/clean/SchoolSites_all_clean.csv", show_col_types = FALSE)
+}
 
-  # Створюємо рядок з усіма колонками; відсутні значення залишаються NA
-  row_values <- as.list(rep(NA_character_, length(all_school_columns)))
-  names(row_values) <- all_school_columns
-  found_flag <- 0L
+united_types <- data.frame(
+  column_name = names(united_df),
+  united_df_type = vapply(united_df, function(col) class(col)[1], character(1)),
+  stringsAsFactors = FALSE
+)
 
-  if (nrow(year_df) > 0) {
-    first_row <- as.data.frame(year_df[1, , drop = FALSE], stringsAsFactors = FALSE)
-    existing_fields <- intersect(names(first_row), all_school_columns)
-    # Для надійного bind_rows приводимо значення до character
-    row_values[existing_fields] <- lapply(first_row[1, existing_fields, drop = FALSE], as.character)
-    found_flag <- 1L
-  }
+if (file.exists("data/clean/SchoolSites_all_EDB.rds")) {
+  edb_df <- readRDS("data/clean/SchoolSites_all_EDB.rds")
+} else if (exists("edb_df")) {
+  edb_df <- edb_df
+} else {
+  edb_df <- readr::read_csv("data/clean/SchoolSites_all_EDB.csv", show_col_types = FALSE)
+}
 
-  output_row <- c(list(dataset_year = year_label, found = found_flag), row_values)
-  as.data.frame(output_row, stringsAsFactors = FALSE, check.names = FALSE)
-}))
+edb_types <- data.frame(
+  column_name = names(edb_df),
+  edb_df_type = vapply(edb_df, function(col) class(col)[1], character(1)),
+  stringsAsFactors = FALSE
+)
 
-print(school_comparison[, c("dataset_year", "found")], row.names = FALSE)
-write_csv(school_comparison, file.path("data/clean", "school_0112607_comparison.csv"))
+df4_vs_united_types <- full_join(
+  df4_types %>% rename(df4_type = data_type),
+  united_types,
+  by = "column_name"
+) %>%
+  full_join(edb_types, by = "column_name") %>%
+  mutate(
+    in_df4 = !is.na(df4_type),
+    in_united_df = !is.na(united_df_type),
+    in_edb_df = !is.na(edb_df_type),
+    same_type_df4_united = ifelse(in_df4 & in_united_df, df4_type == united_df_type, NA),
+    same_type_united_edb = ifelse(in_united_df & in_edb_df, united_df_type == edb_df_type, NA),
+    same_type_df4_edb = ifelse(in_df4 & in_edb_df, df4_type == edb_df_type, NA)
+  ) %>%
+  arrange(desc(in_df4 & in_united_df), column_name) %>%
+  select(
+    column_name,
+    df4_type, united_df_type, edb_df_type,
+    in_df4, in_united_df, in_edb_df,
+    same_type_df4_united, same_type_united_edb, same_type_df4_edb
+  )
+
+print(df4_vs_united_types, row.names = FALSE)
+write_csv(df4_vs_united_types, "data/df4_vs_united_df_types.csv")
+write_csv(df4_vs_united_types, "data/df4_vs_united_vs_edb_types.csv")
