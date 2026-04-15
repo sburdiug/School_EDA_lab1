@@ -1,8 +1,8 @@
 library(readr)
 library(dplyr)
 
-# Спочатку формуємо/оновлюємо очищені CSV + EDB-версію
-source("core/EDB.R")
+# Спочатку формуємо/оновлюємо очищені CSV
+source("core/EDA.R")
 
 # В аналізі беремо саме очищені файли з data/clean
 dataset_files <- c(
