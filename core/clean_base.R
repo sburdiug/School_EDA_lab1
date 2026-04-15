@@ -168,33 +168,32 @@ percent_out_of_range_summary <- united_df |>
   select(ends_with("(%)")) |>
   summarise(across(everything(), ~sum(. < 0 | . > 100, na.rm = TRUE)))
 
-united_df <- united_df |>
-  mutate(
-    grade_low_num = case_when(
-      `Grade Low` == "PK" ~ -2,
-      `Grade Low` == "KG" ~ -1,
-      `Grade Low` %in% sprintf("%02d", 1:12) ~ as.numeric(`Grade Low`),
-      TRUE ~ NA_real_
-    ),
-    grade_high_num = case_when(
-      `Grade High` == "PK" ~ -2,
-      `Grade High` == "KG" ~ -1,
-      `Grade High` %in% c("OK", "0K") ~ 0,
-      `Grade High` %in% sprintf("%02d", 1:12) ~ as.numeric(`Grade High`),
-      TRUE ~ NA_real_
-    )
-  )
+grade_to_num <- function(x) {
+  x <- trimws(toupper(as.character(x)))
+  out <- rep(NA_real_, length(x))
 
-grade_order_issues <- united_df |>
-  filter(grade_high_num < grade_low_num) |>
-  select(`School Level`, `Grade Low`, `Grade High`, grade_low_num, grade_high_num)
+  out[x == "PK"] <- -2
+  out[x == "KG"] <- -1
+  out[x %in% c("OK", "0K", "K")] <- 0
 
-message("Кількість записів з Grade High < Grade Low: ", nrow(grade_order_issues))
-if (nrow(grade_order_issues) > 0) {
-  print(grade_order_issues, n = nrow(grade_order_issues))
+  is_grade_num <- grepl("^(0[1-9]|1[0-2])$", x)
+  out[is_grade_num] <- as.numeric(x[is_grade_num])
+
+  out
 }
 
-write_csv(grade_order_issues, file.path(output_dir, "grade_order_issues.csv"))
+united_df <- united_df |>
+  mutate(
+    grade_low_num = grade_to_num(`Grade Low`),
+    grade_high_num = grade_to_num(`Grade High`)
+  )
+
+#тат 87% = NA
+united_df <- united_df |>
+  select(-`Funding Type`)
+
+
+
 
 
 
