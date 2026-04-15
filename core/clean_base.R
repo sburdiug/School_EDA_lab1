@@ -38,8 +38,8 @@ for (old_name in names(rename_map_df4)) {
   }
 }
 
-# Нормалізує поле Locale: розкодовує двозначний числовий код у два факторних
-# стовпці — locale_type (тип населеного пункту) та locale_size (розмір)
+# Нормалізує поле Locale: розкодовує двозначний числовий код у два стовпці
+# locale_type (тип населеного пункту) та locale_size (розмір)
 # Структура коду: перша цифра — тип (1=City, 2=Suburban, 3=Town, 4=Rural) друга цифра — розмір у межах типу
 normalize_locale <- function(df) {
   # Видаляємо застарілі або дублюючі locale-колонки, якщо вони вже є
@@ -66,16 +66,10 @@ normalize_locale <- function(df) {
     mutate(
       # Витягуємо лише цифри з поля Locale (прибираємо літери та пробіли)
       .code = gsub("[^0-9]", "", as.character(Locale)),
-      # Перша цифра → тип; упорядкований фактор від міського до сільського
-      locale_type = factor(
-        type_labels[substr(.code, 1, 1)],
-        levels = c("City", "Suburban", "Town", "Rural")
-      ),
-      # Перші дві цифри → розмір; рівні впорядковані від найбільшого до найменшого
-      locale_size = factor(
-        size_labels[substr(.code, 1, 2)],
-        levels = c("Large", "Midsize", "Small", "Fringe", "Distant", "Remote")
-      )
+      # Перша цифра → тип
+      locale_type = type_labels[substr(.code, 1, 1)],
+      # Перші дві цифри → розмір
+      locale_size = size_labels[substr(.code, 1, 2)]
     ) |>
     # Видаляємо вихідне поле та службову змінну
     select(-Locale, -.code)
@@ -107,17 +101,34 @@ write_csv(df2, file.path(output_dir, "SchoolSites22-23_clean.csv"))
 write_csv(df3, file.path(output_dir, "SchoolSites23-24_clean.csv"))
 write_csv(df4, file.path(output_dir, "SchoolSites24-25_clean.csv"))
 
-# Об'єднуємо всі очищені таблиці в один датафрейм і зберігаємо
-to_character_df <- function(df) {
-  df %>% mutate(across(everything(), as.character))
+# Об'єднуємо всі очищені таблиці в один датафрейм.
+# Приводимо до character лише ті колонки, де типи між роками конфліктують.
+yearly_dfs <- list(
+  "2021-22" = df1,
+  "2022-23" = df2,
+  "2023-24" = df3,
+  "2024-25" = df4
+)
+
+get_primary_class <- function(col) class(col)[1]
+
+all_cols <- sort(unique(unlist(lapply(yearly_dfs, names), use.names = FALSE)))
+
+conflicting_cols <- all_cols[vapply(all_cols, function(col_name) {
+  present_classes <- unique(unlist(lapply(yearly_dfs, function(df) {
+    if (col_name %in% names(df)) get_primary_class(df[[col_name]]) else NULL
+  }), use.names = FALSE))
+  length(present_classes) > 1
+}, logical(1))]
+
+if (length(conflicting_cols) > 0) {
+  yearly_dfs <- lapply(yearly_dfs, function(df) {
+    cols_to_cast <- intersect(conflicting_cols, names(df))
+    df %>% mutate(across(all_of(cols_to_cast), as.character))
+  })
 }
 
-united_df <- bind_rows(
-  "2021-22" = to_character_df(df1),
-  "2022-23" = to_character_df(df2),
-  "2023-24" = to_character_df(df3),
-  "2024-25" = to_character_df(df4)
-)
+united_df <- bind_rows(yearly_dfs)
 
 united_df <- united_df %>% select(-any_of("OBJECTID"))
 
@@ -147,24 +158,15 @@ united_df <- normalize_yn_columns(united_df, yn_to_bool_columns)
 
 united_df <- united_df |>
   mutate(
-    virtual_status = case_when(
+    Virtual = case_when(
       Virtual == "N" ~ "Not virtual",
       Virtual == "C" ~ "Primarily classroom",
       Virtual == "V" ~ "Primarily virtual",
       Virtual == "F" ~ "Fully virtual",
       TRUE ~ NA_character_
-    ),
-    virtual_status = factor(
-      virtual_status,
-      levels = c(
-        "Not virtual",
-        "Primarily classroom",
-        "Primarily virtual",
-        "Fully virtual"
-      )
     )
   ) |>
-  select(-Virtual)
+  select(-any_of("Closed Date"))
 
 
 write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
