@@ -38,33 +38,47 @@ for (old_name in names(rename_map_df4)) {
   }
 }
 
-# Проста обробка locale-полів у всіх таблицях
+# Нормалізує поле Locale: розкодовує двозначний числовий код у два факторних
+# стовпці — locale_type (тип населеного пункту) та locale_size (розмір)
+# Структура коду: перша цифра — тип (1=City, 2=Suburban, 3=Town, 4=Rural) друга цифра — розмір у межах типу
 normalize_locale <- function(df) {
+  # Видаляємо застарілі або дублюючі locale-колонки, якщо вони вже є
   df <- df %>% select(-any_of(c("locale_type", "locale_size", "Locale Four")))
 
-  if (!"Locale" %in% names(df)) {
-    return(df)
+  # Таблиця підстановки: перша цифра коду → тип населеного пункту
+  type_labels <- c("1" = "City", "2" = "Suburban", "3" = "Town", "4" = "Rural")
+
+  # Будує іменований вектор "код типу + код розміру" → назва розміру
+  make_size_labels <- function(type_codes, size_map) {
+    setNames(
+      rep(unname(size_map), length(type_codes)),
+      paste0(rep(type_codes, each = length(size_map)), names(size_map))
+    )
   }
+
+  # Типи 1–2 (міські) і 3–4 (сільські) мають різні назви розмірів
+  size_labels <- c(
+    make_size_labels(c("1", "2"), c("1" = "Large",  "2" = "Midsize", "3" = "Small")),
+    make_size_labels(c("3", "4"), c("1" = "Fringe", "2" = "Distant", "3" = "Remote"))
+  )
 
   df %>%
     mutate(
-      locale_type = case_when(
-        substr(Locale, 1, 1) == "1" ~ "City",
-        substr(Locale, 1, 1) == "2" ~ "Suburban",
-        substr(Locale, 1, 1) == "3" ~ "Town",
-        substr(Locale, 1, 1) == "4" ~ "Rural",
-        TRUE ~ NA_character_
+      # Витягуємо лише цифри з поля Locale (прибираємо літери та пробіли)
+      .code = gsub("[^0-9]", "", as.character(Locale)),
+      # Перша цифра → тип; упорядкований фактор від міського до сільського
+      locale_type = factor(
+        type_labels[substr(.code, 1, 1)],
+        levels = c("City", "Suburban", "Town", "Rural")
       ),
-      locale_size = case_when(
-        substr(Locale, 2, 2) == "1" ~ "Large",
-        substr(Locale, 2, 2) == "2" ~ "Mid",
-        substr(Locale, 2, 2) == "3" ~ "Small",
-        TRUE ~ NA_character_
-      ),
-      locale_type = factor(locale_type),
-      locale_size = factor(locale_size)
+      # Перші дві цифри → розмір; рівні впорядковані від найбільшого до найменшого
+      locale_size = factor(
+        size_labels[substr(.code, 1, 2)],
+        levels = c("Large", "Midsize", "Small", "Fringe", "Distant", "Remote")
+      )
     ) %>%
-    select(-Locale)
+    # Видаляємо вихідне поле та службову змінну
+    select(-Locale, -.code)
 }
 
 df1 <- normalize_locale(df1)
@@ -72,7 +86,7 @@ df2 <- normalize_locale(df2)
 df3 <- normalize_locale(df3)
 df4 <- normalize_locale(df4)
 
-# Удаляем колонку School Website
+# Видаляємо School Website
 df4 <- df4[, names(df4) != "School Website"]
 
 df4 <- df4 %>%
@@ -92,3 +106,19 @@ write_csv(df1, file.path(output_dir, "SchoolSites21-22_clean.csv"))
 write_csv(df2, file.path(output_dir, "SchoolSites22-23_clean.csv"))
 write_csv(df3, file.path(output_dir, "SchoolSites23-24_clean.csv"))
 write_csv(df4, file.path(output_dir, "SchoolSites24-25_clean.csv"))
+
+# Об'єднуємо всі очищені таблиці в один датафрейм і зберігаємо
+to_character_df <- function(df) {
+  df %>% mutate(across(everything(), as.character))
+}
+
+united_df <- bind_rows(
+  "2021-22" = to_character_df(df1),
+  "2022-23" = to_character_df(df2),
+  "2023-24" = to_character_df(df3),
+  "2024-25" = to_character_df(df4)
+)
+
+united_df <- united_df %>% select(-any_of("OBJECTID"))
+
+write_csv(united_df, file.path(output_dir, "SchoolSites_all_clean.csv"))
