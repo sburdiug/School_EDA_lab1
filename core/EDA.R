@@ -48,7 +48,6 @@ eda_df <- united_df |>
     `School Type` = factor(
       `School Type`,
       levels = school_type_levels,
-      ordered = TRUE
     ),
     Status = factor(
       Status,
